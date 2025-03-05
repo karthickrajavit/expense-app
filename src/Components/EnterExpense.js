@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCategories } from "../context/CategoryContext";
+import { getCategories, addExpense } from "../api/apiService";
 import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,7 +13,8 @@ import dayjs from "dayjs";
 import Button from '@mui/material/Button';
 
 export default function EnterExpense() {
-  const { categories } = useCategories();
+  // const { categories } = useCategories();
+  const { categories, setCategories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [date, setDate] = useState("");
   const [tags, setTags] = useState("");
@@ -21,10 +23,22 @@ export default function EnterExpense() {
 
   useEffect(() => {
     setDate(new Date().toISOString().split("T")[0]);
+    fetchCategories();
   }, []);
 
-  const handleSubmit = (e) => {
+  const fetchCategories = async () => {
+    const data = await getCategories();
+    setCategories(data);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedCategory || !amount) return;
+    const selectedCategoryObj = categories.find(category => category.name === selectedCategory);
+    const { _id } = selectedCategoryObj;
+    await addExpense({ category: _id, amount, date, tags: tags.split(",") });
+    setAmount("");
+    setTags("");
     console.log("Expense Saved:", { selectedCategory, date, tags });
   };
 
@@ -50,8 +64,8 @@ export default function EnterExpense() {
               <em>None</em>
             </MenuItem>
             {categories.map((category, index) => (
-              <MenuItem key={index} value={category}>
-                {category}
+              <MenuItem key={index} value={category.name}>
+                {category.name}
               </MenuItem>
             ))}
 
@@ -84,65 +98,6 @@ export default function EnterExpense() {
         </Box>
 
       </FormControl>
-
-      {/* Category Dropdown */}
-      {/* <div>
-          <label className="block text-gray-700">Select Category</label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">-- Select --</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div> */}
-
-      {/* <div>
-          <label className="block text-gray-700">Enter Amount</label>
-          <input
-            type="text"
-            value={amount}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value)) {
-                setAmount(value);
-              }
-            }}
-            className="w-full p-2 border rounded"
-          />
-        </div> */}
-
-      {/* Date Picker */}
-      {/* <div>
-          <label className="block text-gray-700">Select Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-        </div> */}
-
-      {/* Tags Input */}
-
-      {/* <div>
-          <label className="block text-gray-700">Enter Tags</label>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-        </div> */}
-
-      {/* <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded">
-          Submit Expense
-        </button> */}
 
     </div>
   );
