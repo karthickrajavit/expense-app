@@ -16,13 +16,11 @@ export default function EnterExpense() {
   // const { categories } = useCategories();
   const { categories, setCategories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [date, setDate] = useState("");
   const [tags, setTags] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
   useEffect(() => {
-    setDate(new Date().toISOString().split("T")[0]);
     fetchCategories();
   }, []);
 
@@ -36,10 +34,11 @@ export default function EnterExpense() {
     if (!selectedCategory || !amount) return;
     const selectedCategoryObj = categories.find(category => category.name === selectedCategory);
     const { _id } = selectedCategoryObj;
-    await addExpense({ category: _id, amount, date, tags: tags.split(",") });
+    const apiDate = selectedDate.format("YYYY-MM-DD");
+    await addExpense({ category: _id, amount, apiDate, tags: tags.split(",") });
     setAmount("");
     setTags("");
-    console.log("Expense Saved:", { selectedCategory, date, tags });
+    console.log("Expense Saved:", { selectedCategory, apiDate, tags });
   };
 
   return (

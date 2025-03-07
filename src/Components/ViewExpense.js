@@ -16,10 +16,11 @@ import { getExpenses, getCategories } from "../api/apiService";
 export default function ViewExpense() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [tags, setTags] = useState("");
-  const [date, setDate] = useState(dayjs());
+  const [date, setDate] = useState(null);
   const [relativeTime, setRelativeTime] = useState("");
-  const relativeTimeOptions = ["This Week", "This Month"];
+  const relativeTimeOptions = ["Today", "This Week", "This Month"];
   const { categories, setCategories } = useCategories();
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     // setDate(new Date().toISOString().split("T")[0]);
@@ -31,15 +32,31 @@ export default function ViewExpense() {
     setCategories(data);
   };
 
+  const assignDateRange = (relativeTime) => {
+    const today = dayjs();
+    let startDate = today;
+    let endDate = today; // Default to today
+    if (relativeTime === "This Week") {
+      startDate = today.startOf("week");
+      endDate = today.endOf("week");
+    }
+    else if (relativeTime === "This Month") {
+      startDate = today.startOf("month");
+      endDate = today.endOf("month");
+    }
+    setDateRange({ startDate, endDate });
+  };
+
   // Check if at least one field is filled
   const isSearchEnabled = selectedCategory || tags || date || relativeTime;
 
   const handleSearch = () => {
     const selectedCategoryObj = categories.find(category => category.name === selectedCategory);
     const categoryId = selectedCategoryObj ? selectedCategoryObj._id : null;
-    const formattedDate = date.format("YYYY-MM-DD"); // Format the date to exclude the time part
+    const formattedDate = date ? date.format("YYYY-MM-DD") : null; // Format the date to exclude the time part
 
-    getExpenses({ category: categoryId, tags, date: formattedDate }); // Pass the category ID and formatted date
+
+    getExpenses({ category: categoryId, tags, date: formattedDate, dateRange }); // Pass the category ID and formatted date
     console.log("Search Criteria:", {
       category: categoryId,
       tags,
@@ -97,7 +114,12 @@ export default function ViewExpense() {
             variant="standard"
             format="DD-MM-YYYY"
             value={date}
-            onChange={(newDate) => setDate(newDate)}
+            onChange={(newDate) => {
+              setDate(newDate);
+              if (newDate) {
+                setRelativeTime(""); // Reset relative time if date is selected
+              }
+            }}
             renderInput={(params) => <TextField {...params} variant="standard" />}
           />
         </LocalizationProvider>
@@ -108,7 +130,13 @@ export default function ViewExpense() {
           variant="filled"
           id='select-time'
           value={relativeTime}
-          onChange={(e) => setRelativeTime(e.target.value)}
+          onChange={(e) => {
+            setRelativeTime(e.target.value);
+            if (e.target.value) {
+              assignDateRange(e.target.value);
+              setDate(null); // Reset date if relative time is selected
+            }
+          }}
           label="Relative Time (Optional)"
         >
           <MenuItem value="">
