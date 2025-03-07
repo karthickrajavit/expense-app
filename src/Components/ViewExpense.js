@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCategories } from "../context/CategoryContext";
 import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
@@ -11,24 +11,56 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import Button from '@mui/material/Button';
 import { Autocomplete } from "@mui/material";
+import { getExpenses, getCategories } from "../api/apiService";
 
 export default function ViewExpense() {
-  const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [tags, setTags] = useState("");
-  const [date, setDate] = useState(dayjs());
+  const [date, setDate] = useState(null);
   const [relativeTime, setRelativeTime] = useState("");
-  const [relativeCategories, setRelativeCategories] = useState(["Today", "This Month"]);
+  const relativeTimeOptions = ["Today", "This Week", "This Month"];
+  const { categories, setCategories } = useCategories();
+  const [dateRange, setDateRange] = useState(null);
 
+  useEffect(() => {
+    // setDate(new Date().toISOString().split("T")[0]);
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const data = await getCategories();
+    setCategories(data);
+  };
+
+  const assignDateRange = (relativeTime) => {
+    const today = dayjs();
+    let startDate = today;
+    let endDate = today; // Default to today
+    if (relativeTime === "This Week") {
+      startDate = today.startOf("week");
+      endDate = today.endOf("week");
+    }
+    else if (relativeTime === "This Month") {
+      startDate = today.startOf("month");
+      endDate = today.endOf("month");
+    }
+    setDateRange({ startDate, endDate });
+  };
 
   // Check if at least one field is filled
   const isSearchEnabled = selectedCategory || tags || date || relativeTime;
 
   const handleSearch = () => {
+    const selectedCategoryObj = categories.find(category => category.name === selectedCategory);
+    const categoryId = selectedCategoryObj ? selectedCategoryObj._id : null;
+    const formattedDate = date ? date.format("YYYY-MM-DD") : null; // Format the date to exclude the time part
+
+
+    getExpenses({ category: categoryId, tags, date: formattedDate, dateRange }); // Pass the category ID and formatted date
     console.log("Search Criteria:", {
-      selectedCategory,
+      category: categoryId,
       tags,
-      date,
+      date: formattedDate,
       relativeTime,
     });
   };
@@ -45,32 +77,30 @@ export default function ViewExpense() {
         autoComplete="off"
         variant="filled"
       >
-        <Autocomplete
+        {/* <Autocomplete
           options={categories} // List of options
           value={selectedCategory} // Selected value
           onChange={(event, newValue) => setSelectedCategory(newValue)}
           renderInput={(params) => <TextField {...params} label="Select a category" />}
-        />
+        /> */}
 
-        {/* <InputLabel variant="filled" id='select-category'>Select Category</InputLabel>
+        <InputLabel id='select-category'>Select Category</InputLabel>
         <Select
-          variant="filled"
           labelId='select-category'
           id='select-category'
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          label="Select Category (Optional)"
+          label="Select Category"
         >
           <MenuItem value="">
             <em>None</em>
           </MenuItem>
           {categories.map((category, index) => (
-            <MenuItem key={index} value={category}>
-              {category}
+            <MenuItem key={index} value={category.name}>
+              {category.name}
             </MenuItem>
           ))}
-
-        </Select> */}
+        </Select>
 
         <TextField id="tags" label="Enter Tags (Optional)"
           value={tags}
@@ -84,26 +114,37 @@ export default function ViewExpense() {
             variant="standard"
             format="DD-MM-YYYY"
             value={date}
-            onChange={(newDate) => setDate(newDate)}
+            onChange={(newDate) => {
+              setDate(newDate);
+              if (newDate) {
+                setRelativeTime(""); // Reset relative time if date is selected
+              }
+            }}
             renderInput={(params) => <TextField {...params} variant="standard" />}
           />
         </LocalizationProvider>
 
-        <InputLabel id='select-category' variant="filled">Relative Time (Optional)</InputLabel>
+        <InputLabel id='select-time' variant="filled">Relative Time (Optional)</InputLabel>
         <Select
-          labelId='select-category'
+          labelId='select-time'
           variant="filled"
-          id='select-category'
+          id='select-time'
           value={relativeTime}
-          onChange={(e) => setRelativeTime(e.target.value)}
+          onChange={(e) => {
+            setRelativeTime(e.target.value);
+            if (e.target.value) {
+              assignDateRange(e.target.value);
+              setDate(null); // Reset date if relative time is selected
+            }
+          }}
           label="Relative Time (Optional)"
         >
           <MenuItem value="">
             <em>None</em>
           </MenuItem>
-          {relativeCategories.map((category, index) => (
-            <MenuItem key={index} value={category}>
-              {category}
+          {relativeTimeOptions.map((relativeTime, index) => (
+            <MenuItem key={index} value={relativeTime}>
+              {relativeTime}
             </MenuItem>
           ))}
 
@@ -113,69 +154,6 @@ export default function ViewExpense() {
           disabled={!isSearchEnabled} >Search</Button>
 
       </Box>
-      {/* Category Dropdown */}
-      {/* <div>
-        <label className="block text-gray-700">Select Category (Optional)</label>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full p-2 border rounded"
-        >
-          <option value="">-- Select --</option>
-          {categories.map((category, index) => (
-            <option key={index} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div> */}
-
-      {/* Tags Input */}
-      {/* <div className="mt-3">
-        <label className="block text-gray-700">Enter Tags (Optional)</label>
-        <input
-          type="text"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="w-full p-2 border rounded"
-          placeholder="e.g. groceries, travel"
-        />
-      </div> */}
-
-      {/* Date Picker */}
-      {/* <div className="mt-3">
-        <label className="block text-gray-700">Select Date (Optional)</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-      </div> */}
-
-      {/* Relative Time Dropdown */}
-      {/* <div className="mt-3">
-        <label className="block text-gray-700">Relative Time (Optional)</label>
-        <select
-          value={relativeTime}
-          onChange={(e) => setRelativeTime(e.target.value)}
-          className="w-full p-2 border rounded"
-        >
-          <option value="">-- Select --</option>
-          <option value="today">Today</option>
-          <option value="this_month">This Month</option>
-        </select>
-      </div> */}
-
-      {/* Search Button */}
-      {/* <button
-        onClick={handleSearch}
-        disabled={!isSearchEnabled}
-        className={`w-full mt-4 py-2 rounded text-white ${isSearchEnabled ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 cursor-not-allowed"
-          }`}
-      >
-        Search
-      </button> */}
     </div>
   );
 }

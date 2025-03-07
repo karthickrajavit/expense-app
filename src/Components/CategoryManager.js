@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCategories } from "../context/CategoryContext";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -6,19 +6,47 @@ import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
+import { getCategories, addCategoryApi, deleteCategoryApi } from "../api/apiService";
+import { data } from "react-router-dom";
 
 export default function CategoryManager() {
   const { categories, setCategories } = useCategories();
   const [newCategory, setNewCategory] = useState("");
 
+  useEffect(() => {
+    fetchCategories();
+  }, [])
+
+  const fetchCategories = async () => {
+    const data = await getCategories();
+    setCategories(data);
+  };
+
+  const handleAddCategory = async () => {
+    if (newCategory.trim() === "") return;
+    await addCategoryApi({ name: newCategory });
+    setNewCategory("");
+    fetchCategories();
+  };
+
+
+
   const addCategory = () => {
     if (newCategory.trim() !== "" && !categories.includes(newCategory)) {
-      setCategories([...categories, newCategory]); // Update Global State
-      setNewCategory("");
+      handleAddCategory();
+      const categoryToAdd = { name: newCategory.trim() };
+      //setCategories([...categories, newCategory]); // Update Global State
+      //setNewCategory("");
     }
   };
 
+  const handleDeleteCategory = async (category) => {
+    await deleteCategoryApi(category);
+    fetchCategories();
+  };
+
   const deleteCategory = (category) => {
+    handleDeleteCategory(category);
     setCategories(categories.filter((cat) => cat !== category)); // Update Global State
   };
 
@@ -36,45 +64,16 @@ export default function CategoryManager() {
           onChange={(e) => setNewCategory(e.target.value)} />
         <Button variant="contained" onClick={addCategory} >Add</Button>
       </Box>
-      {/* Add Category Input */}
-      {/* <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Enter new category"
-          value={newCategory}
-          onChange={(e) => setNewCategory(e.target.value)}
-          className="border p-2 flex-grow rounded"
-        />
-        <button onClick={addCategory} className="bg-green-500 text-white px-4 rounded">
-          Add
-        </button>
-      </div> */}
 
       <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
         {categories.map((category, index) => (
           <ListItem>
-
-            <ListItemText primary={category} />
-            <Button variant="contained" onClick={() => deleteCategory(category)} >Delete</Button>
+            <ListItemText primary={category.name} />
+            <Button variant="contained" onClick={() => deleteCategory(category.name)} >Delete</Button>
           </ListItem>
         ))}
 
       </List>
-
-      {/* Category List */}
-      {/* <ul className="mt-4">
-        {categories.map((category, index) => (
-          <li key={index} className="flex justify-between p-2 border-b">
-            {category}
-            <button
-              onClick={() => deleteCategory(category)}
-              className="text-red-500"
-            >
-              x
-            </button>
-          </li>
-        ))}
-      </ul> */}
     </div>
   );
 }
