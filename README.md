@@ -3,4 +3,5 @@
 **React
 Node JS
 Rest Microservices
-Mongo DB**
+Mongo DB
+Frontend & Backend Authentication using firebase**
