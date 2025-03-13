@@ -13,6 +13,52 @@ import Button from '@mui/material/Button';
 import { Autocomplete } from "@mui/material";
 import { getExpenses, getCategories } from "../api/apiService";
 
+import * as React from 'react';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+
+
+function createData(category, amount, date, tags) {
+  return { category, amount, date, tags };
+}
+
+function BasicTable({rows}) {
+  return (
+    <TableContainer component={Paper}>
+      <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Category</TableCell>
+            <TableCell align="right">Amount spent</TableCell>
+            <TableCell align="right">Date</TableCell>
+            <TableCell align="right">Tags</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow
+              key={row.category}
+              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+              <TableCell component="th" scope="row">
+                {row.category}
+              </TableCell>
+              <TableCell align="right">{row.amount}</TableCell>
+              <TableCell align="right">{row.date}</TableCell>
+              <TableCell align="right">{row.tags}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
 export default function ViewExpense() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [tags, setTags] = useState("");
@@ -20,7 +66,10 @@ export default function ViewExpense() {
   const [relativeTime, setRelativeTime] = useState("");
   const relativeTimeOptions = ["Today", "This Week", "This Month"];
   const { categories, setCategories } = useCategories();
-  const [dateRange, setDateRange] = useState(null);
+  const [dateRange, setDateRange] = useState('');
+  const [responseData, setResponseData] = useState([]); // Declare responseData as a state variable
+  const [showTable, setShowTable] = useState(false); // Declare showTable as a state variable
+  const [totalAmount, setTotalAmount] = useState(0);
 
   useEffect(() => {
     // setDate(new Date().toISOString().split("T")[0]);
@@ -44,26 +93,42 @@ export default function ViewExpense() {
       startDate = today.startOf("month");
       endDate = today.endOf("month");
     }
-    setDateRange({ startDate, endDate });
+    startDate = startDate.format("YYYY-MM-DD"); // Format the date to exclude the time
+    endDate = endDate.format("YYYY-MM-DD"); // Format the date to exclude the time
+    
+    const datee= startDate+','+endDate;
+    console.log(datee);
+    setDateRange(datee);
+    console.log(typeof startDate, typeof endDate, typeof dateRange, dateRange);
   };
 
   // Check if at least one field is filled
   const isSearchEnabled = selectedCategory || tags || date || relativeTime;
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const selectedCategoryObj = categories.find(category => category.name === selectedCategory);
     const categoryId = selectedCategoryObj ? selectedCategoryObj._id : null;
     const formattedDate = date ? date.format("YYYY-MM-DD") : null; // Format the date to exclude the time part
+    const tagsArray = tags ? tags : null;
+    const dateRanges = relativeTime ? dateRange : null;
 
-
-    getExpenses({ category: categoryId, tags, date: formattedDate, dateRange }); // Pass the category ID and formatted date
-    console.log("Search Criteria:", {
-      category: categoryId,
-      tags,
-      date: formattedDate,
-      relativeTime,
-    });
+    const filters = { category: categoryId, tags: tagsArray, date: formattedDate, dateRange: dateRanges };
+    console.log(filters);
+    setResponseData([]); // Reset the responseData state variable
+    await fetchExpenses(filters);
+    setShowTable(true);
   };
+
+  const fetchExpenses = async (filters) => {
+    const data = await getExpenses(filters);
+    setResponseData(data.expenses);
+    setTotalAmount(data.totalExpense);
+    console.log(data);  // Log the data to the console
+  };
+
+  const rows = responseData.map((expense) => {
+    return createData(expense.category.name, expense.amount, expense.date, expense.tags.join(", "));
+  });
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
@@ -77,12 +142,6 @@ export default function ViewExpense() {
         autoComplete="off"
         variant="filled"
       >
-        {/* <Autocomplete
-          options={categories} // List of options
-          value={selectedCategory} // Selected value
-          onChange={(event, newValue) => setSelectedCategory(newValue)}
-          renderInput={(params) => <TextField {...params} label="Select a category" />}
-        /> */}
 
         <InputLabel id='select-category'>Select Category</InputLabel>
         <Select
@@ -150,10 +209,19 @@ export default function ViewExpense() {
 
         </Select>
 
-        <Button sx={{ fontSize: "12px", padding: "4px 8px", minWidth: "60px", height: "30px" }} variant="contained" onClick={handleSearch}
-          disabled={!isSearchEnabled} >Search</Button>
+        <Box display="flex" alignItems="center">
+          <Button sx={{ fontSize: "12px", padding: "4px 8px", minWidth: "60px", height: "30px" }} variant="contained" onClick={handleSearch}
+            disabled={!isSearchEnabled} >Search</Button>
+          {showTable && (
+            <Box ml={2}>
+              <strong>Total: </strong>INR {totalAmount}
+            </Box>
+          )}
+        </Box>
 
       </Box>
+      {/* Render the BasicTable component */}
+     {showTable && <BasicTable rows = {rows}/>}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { CategoryProvider } from "./context/CategoryContext";
 import CategoryManager from "./Components/CategoryManager";
 import EnterExpense from "./Components/EnterExpense";
 import ViewExpense from "./Components/ViewExpense";
+import ProtectedRoute from "./Components/ProtectedRoute";
+import Login from "./Components/Login";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -51,9 +53,14 @@ function App() {
           <TabNavigation />
           {/* Page Routes */}
           <Routes>
-            <Route path="/" element={<CategoryManager />} />
-            <Route path="/expense" element={<EnterExpense />} />
-            <Route path="/view-expense" element={<ViewExpense />} /> {/* New Page */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/expense" element={<ProtectedRoute><EnterExpense /></ProtectedRoute>} />
+            <Route path="/view-expense" element={<ProtectedRoute><ViewExpense /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
+            <Route path="*" element={<h1>Not Found</h1>} />
+            {/* <Route path="/" element={<CategoryManager />} /> */}
+            {/* <Route path="/expense" element={<EnterExpense />} /> */}
+            {/* <Route path="/view-expense" element={<ViewExpense />} /> New Page */}
           </Routes>
         </div>
       </Router>
