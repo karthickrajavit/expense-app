@@ -5,7 +5,7 @@ const CategoryContext = createContext();
 
 // Context Provider Component
 export function CategoryProvider({ children }) {
-  const [categories, setCategories] = useState(["Food", "Travel", "Shopping"]);
+  const [categories, setCategories] = useState([]);
 
   return (
     <CategoryContext.Provider value={{ categories, setCategories }}>

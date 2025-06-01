@@ -3,9 +3,9 @@ import { useCategories } from "../context/CategoryContext";
 import { getCategories, addExpense } from "../api/apiService";
 import TextField from "@mui/material/TextField";
 import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
+import { addCategoryApi } from "../api/apiService";
 import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
+import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -19,6 +19,8 @@ export default function EnterExpense() {
   const [tags, setTags] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [isNewCategory, setIsNewCategory] = useState(false); // State to track if the category is new
+  const [isCategorySelected, setIsCategorySelected] = useState(false); // State to track if a category is selected
 
   useEffect(() => {
     fetchCategories();
@@ -31,16 +33,55 @@ export default function EnterExpense() {
 
   const isSearchEnabled = selectedCategory && amount; // test if both fields are filled
 
+  const handleAddCategory = async () => {
+    if (!selectedCategory.trim()) return;
+    try {
+      const newCategory = await addCategoryApi({ name: selectedCategory });
+      setCategories([...categories, newCategory]); // Update the categories list
+      setIsNewCategory(false); // Hide the button after adding the category
+      setSelectedCategory(newCategory.name); // Set the selected category to the newly added one
+      setIsCategorySelected(true); // Mark the category as selected
+      console.log("Category added:", newCategory);
+    } catch (error) {
+      console.error("Error adding category:", error.message);
+    }
+  };
+
+  const handleCategoryChange = (event, newValue) => {
+    setSelectedCategory(newValue);
+    // Check if the entered category exists
+    const categoryExists = categories.some(
+      (category) => category.name.toLowerCase() === newValue?.toLowerCase()
+    );
+    setIsCategorySelected(categoryExists); // Update category selection state
+    setIsNewCategory(!categoryExists && newValue?.trim() !== ""); // Show button if it's a new category
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCategory || !amount) return;
+
+    // Log when the submit button is clicked
+    console.log("Submit button clicked");
+
+    if (!selectedCategory || !amount) {
+      console.error("Category or amount is not selected or empty");
+      return;
+    }
+    if (!isCategorySelected) {
+      console.error("No category selected or added");
+      return;
+    }
     const selectedCategoryObj = categories.find(
       (category) => category.name === selectedCategory
     );
     const { _id } = selectedCategoryObj;
     const apiDate = selectedDate.format("YYYY-MM-DD");
     const resultTags = tags.split(",").map((tag) => tag.trim());
-    await addExpense({ category: _id, amount, apiDate, tags: resultTags });
+
+    // Log the final payload before sending the API request
+    const expensePayload = { category: _id, amount, apiDate, tags: resultTags };
+    console.log("Expense Payload:", expensePayload);
+    await addExpense(expensePayload);
     setAmount("");
     setTags("");
     console.log("Expense Saved:", { selectedCategory, apiDate, tags });
@@ -56,23 +97,42 @@ export default function EnterExpense() {
           noValidate
           autoComplete="off"
         >
-          <InputLabel id="select-category">Select Category</InputLabel>
-          <Select
-            labelId="select-category"
-            id="select-category"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            label="Select Category"
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {categories.map((category, index) => (
-              <MenuItem key={index} value={category.name}>
-                {category.name}
-              </MenuItem>
-            ))}
-          </Select>
+          <InputLabel id="select-category"></InputLabel>
+          {/* Autocomplete for Category */}
+          <Box display="flex" alignItems="center">
+            <Autocomplete
+              id="select-category"
+              options={categories.map((category) => category.name)} // Extract category names
+              value={selectedCategory}
+              onChange={handleCategoryChange}
+              freeSolo
+              sx={{ width: "100%" }} // Adjust width as needed
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Category"
+                  variant="standard"
+                  placeholder="Type to search..."
+                  sx={{ width: "100%" }} // Adjust width as needed
+                />
+              )}
+            />
+            {/* Button to add new category */}
+            {/* Show button only if the category is new */}
+            {isNewCategory && (
+              <Button
+                variant="outlined"
+                size="small" // Adjust size as needed
+                sx={{ marginLeft: 1 }}
+                onClick={handleAddCategory}
+              >
+                Add Category
+              </Button>
+            )}
+          </Box>
+
+          {/* TextField for Amount */}
+
           <TextField
             id="enter-amount"
             label="Enter Amount"

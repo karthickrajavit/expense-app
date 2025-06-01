@@ -1,11 +1,10 @@
 import { useState } from "react";
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 import { login } from "../services/authService";
 import { useNavigate } from "react-router-dom";
-import { useHistory } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,8 +16,7 @@ export default function Login() {
     e.preventDefault();
     try {
       await login(email, password);
-      //await login("suganyakbtechit@gmail.com", "sugikrtk");
-      navigate("/"); // Redirect to dashboard or expenses page after login
+      navigate("/view-expense"); // Redirect to the view expense page after successful login
     } catch (error) {
       setError(error.message);
     }
@@ -32,7 +30,7 @@ export default function Login() {
 
       <Box
         component="form"
-        sx={{ '& > :not(style)': { m: 1, width: '25ch' } }}
+        sx={{ "& > :not(style)": { m: 1, width: "25ch" } }}
         noValidate
         autoComplete="off"
       >
@@ -53,11 +51,7 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           fullWidth
         />
-        <Button
-          variant="contained"
-          onClick={handleLogin}
-          fullWidth
-        >
+        <Button variant="contained" onClick={handleLogin} fullWidth>
           Login
         </Button>
       </Box>

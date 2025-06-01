@@ -25,7 +25,6 @@ const TabNavigation = () => {
   const location = useLocation();
 
   const tabs = [
-    { label: "Manage Categories", path: "/" },
     { label: "Enter Expense", path: "/expense" },
     { label: "View Expense", path: "/view-expense" },
   ];
@@ -74,12 +73,10 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/expense" element={<EnterExpense />} />
             <Route path="/view-expense" element={<ViewExpense />} />
-            <Route path="/" element={<CategoryManager />} />
             <Route path="*" element={<h1>Not Found</h1>} />
           </Route>
-          {/* <Route path="/" element={<CategoryManager />} /> */}
-          {/* <Route path="/expense" element={<EnterExpense />} /> */}
-          {/* <Route path="/view-expense" element={<ViewExpense />} /> New Page */}
+          {/* Default route to ViewExpense */}
+          <Route path="/" element={<ViewExpense />} />
         </Routes>
       </Router>
     </CategoryProvider>

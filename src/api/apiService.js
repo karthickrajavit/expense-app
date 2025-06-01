@@ -1,7 +1,7 @@
 import axios from "axios";
 import { auth } from "../firebase";
 
-const API_BASE_URL = "http://localhost:5000/api"; // Adjust if needed
+const API_BASE_URL = "http://localhost:5000"; // Adjust if needed
 
 export const getCategories = async () => {
   try {
@@ -111,5 +111,31 @@ export const getExpenses = async (filters) => {
   } catch (error) {
     console.error("Error fetching expenses:", error);
     return [];
+  }
+};
+
+export const deleteExpense = async (expenseId) => {
+  try {
+    // Get Firebase ID token from the currently logged-in user
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+
+    const token = await user.getIdToken(); // Fetch ID token
+
+    // Set up headers with Authorization token
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+    const response = await axios.delete(
+      `${API_BASE_URL}/expenses/${expenseId}`,
+      {
+        headers: { ...headers },
+      }
+    );
+    console.log("Expense deleted:", response.data); // Log the response for debugging
+    return true;
+  } catch (error) {
+    console.error("Error deleting expense:", error.message);
+    throw error;
   }
 };
