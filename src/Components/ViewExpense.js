@@ -19,6 +19,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import FormControl from "@mui/material/FormControl";
 
 function createData(id, category, amount, date, tags) {
   return { id, category, amount, date, tags };
@@ -84,6 +85,7 @@ export default function ViewExpense() {
   const [tags, setTags] = useState("");
   const [date, setDate] = useState(null);
   const [relativeTime, setRelativeTime] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const relativeTimeOptions = ["Today", "This Week", "This Month"];
   const { categories, setCategories } = useCategories();
   const [dateRange, setDateRange] = useState("");
@@ -189,6 +191,19 @@ export default function ViewExpense() {
     );
   });
 
+  const allTags = Array.from(
+    new Set(rows.flatMap((row) => row.tags.split(",").map((tag) => tag.trim())))
+  ).filter((tag) => tag); // Remove empty strings
+
+  const filteredRows = tagFilter
+    ? rows.filter((row) =>
+        row.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .includes(tagFilter)
+      )
+    : rows;
+
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">View Expenses</h2>
@@ -271,6 +286,25 @@ export default function ViewExpense() {
           ))}
         </Select>
 
+        <FormControl variant="standard" sx={{ minWidth: 120, marginLeft: 2 }}>
+          <InputLabel id="tag-filter-label">Filter by Tag</InputLabel>
+          <Select
+            labelId="tag-filter-label"
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            label="Filter by Tag"
+          >
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
+            {allTags.map((tag) => (
+              <MenuItem key={tag} value={tag}>
+                {tag}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Box display="flex" alignItems="center">
           <Button
             sx={{
@@ -293,7 +327,9 @@ export default function ViewExpense() {
         </Box>
       </Box>
       {/* Render the BasicTable component */}
-      {showTable && <BasicTable rows={rows} onDelete={handleDeleteExpense} />}
+      {showTable && (
+        <BasicTable rows={filteredRows} onDelete={handleDeleteExpense} />
+      )}
     </div>
   );
 }

@@ -11,6 +11,8 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import Button from "@mui/material/Button";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 export default function EnterExpense() {
   // const { categories } = useCategories();
@@ -21,6 +23,10 @@ export default function EnterExpense() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [isNewCategory, setIsNewCategory] = useState(false); // State to track if the category is new
   const [isCategorySelected, setIsCategorySelected] = useState(false); // State to track if a category is selected
+  const [openSnackbar, setOpenSnackbar] = useState(false); // State to control Snackbar visibility
+  const [categorySnackbar, setCategorySnackbar] = useState(false);
+  const [errorSnackbar, setErrorSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     fetchCategories();
@@ -41,6 +47,7 @@ export default function EnterExpense() {
       setIsNewCategory(false); // Hide the button after adding the category
       setSelectedCategory(newCategory.name); // Set the selected category to the newly added one
       setIsCategorySelected(true); // Mark the category as selected
+      setCategorySnackbar(true); // Show success message for category addition
       console.log("Category added:", newCategory);
     } catch (error) {
       console.error("Error adding category:", error.message);
@@ -64,27 +71,45 @@ export default function EnterExpense() {
     console.log("Submit button clicked");
 
     if (!selectedCategory || !amount) {
-      console.error("Category or amount is not selected or empty");
+      setErrorMessage("Category or amount is not selected or empty");
+      setErrorSnackbar(true);
       return;
     }
+
     if (!isCategorySelected) {
-      console.error("No category selected or added");
+      setErrorMessage("No category selected or added");
+      setErrorSnackbar(true);
       return;
     }
     const selectedCategoryObj = categories.find(
-      (category) => category.name === selectedCategory
+      (category) =>
+        category.name.toLowerCase() === selectedCategory.toLowerCase()
     );
+    if (!selectedCategoryObj) {
+      setErrorMessage(
+        "No matching category found. Please add the category first."
+      );
+      setErrorSnackbar(true);
+      return;
+    }
+
     const { _id } = selectedCategoryObj;
     const apiDate = selectedDate.format("YYYY-MM-DD");
     const resultTags = tags.split(",").map((tag) => tag.trim());
 
     // Log the final payload before sending the API request
-    const expensePayload = { category: _id, amount, apiDate, tags: resultTags };
+    const expensePayload = {
+      category: _id,
+      amount,
+      date: apiDate,
+      tags: resultTags,
+    };
     console.log("Expense Payload:", expensePayload);
     await addExpense(expensePayload);
     setAmount("");
     setTags("");
     console.log("Expense Saved:", { selectedCategory, apiDate, tags });
+    setOpenSnackbar(true); // Show success message
   };
 
   return (
@@ -105,6 +130,17 @@ export default function EnterExpense() {
               options={categories.map((category) => category.name)} // Extract category names
               value={selectedCategory}
               onChange={handleCategoryChange}
+              onInputChange={(event, newInputValue) => {
+                setSelectedCategory(newInputValue);
+                // Check if the input is empty or a new category
+                setIsNewCategory(
+                  !categories.some(
+                    (category) =>
+                      category.name.toLowerCase() ===
+                      newInputValue.toLowerCase()
+                  ) && newInputValue.trim() !== ""
+                );
+              }}
               freeSolo
               sx={{ width: "100%" }} // Adjust width as needed
               renderInput={(params) => (
@@ -119,16 +155,17 @@ export default function EnterExpense() {
             />
             {/* Button to add new category */}
             {/* Show button only if the category is new */}
-            {isNewCategory && (
-              <Button
-                variant="outlined"
-                size="small" // Adjust size as needed
-                sx={{ marginLeft: 1 }}
-                onClick={handleAddCategory}
-              >
-                Add Category
-              </Button>
-            )}
+            {isNewCategory &&
+              (selectedCategory || "").trim() !== "" && ( // Ensure the button is not shown when the input is empty
+                <Button
+                  variant="outlined"
+                  size="small" // Adjust size as needed
+                  sx={{ marginLeft: 1 }}
+                  onClick={handleAddCategory}
+                >
+                  Add Category
+                </Button>
+              )}
           </Box>
 
           {/* TextField for Amount */}
@@ -180,6 +217,50 @@ export default function EnterExpense() {
           </Button>
         </Box>
       </FormControl>
+      {/* Snackbar for success message */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          Expense added successfully!
+        </Alert>
+      </Snackbar>
+      {/* Snackbar for adding category message */}
+      <Snackbar
+        open={categorySnackbar}
+        autoHideDuration={3000}
+        onClose={() => setCategorySnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setCategorySnackbar(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          Category added successfully!
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={errorSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setErrorSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setErrorSnackbar(false)}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

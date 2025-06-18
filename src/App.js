@@ -7,10 +7,10 @@ import {
   useLocation,
 } from "react-router-dom";
 import { CategoryProvider } from "./context/CategoryContext";
-import CategoryManager from "./Components/CategoryManager";
 import EnterExpense from "./Components/EnterExpense";
 import ViewExpense from "./Components/ViewExpense";
 import ProtectedRoute from "./Components/ProtectedRoute";
+import Dashboard from "./Components/VisualizeExpense";
 import Login from "./Components/Login";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
@@ -27,6 +27,7 @@ const TabNavigation = () => {
   const tabs = [
     { label: "Enter Expense", path: "/expense" },
     { label: "View Expense", path: "/view-expense" },
+    { label: "Visualize Expense", path: "/visualize-expense" },
   ];
 
   // Find the active tab index based on the current path
@@ -38,7 +39,7 @@ const TabNavigation = () => {
         textColor="secondary"
         indicatorColor="secondary"
         variant="scrollable"
-        value={currentTab !== -1 ? currentTab : 0} // Default to first tab if no match
+        value={currentTab !== -1 ? currentTab : 1} // Default to first tab if no match
         onChange={(event, newValue) => navigate(tabs[newValue].path)}
       >
         {tabs.map((tab, index) => (
@@ -73,6 +74,8 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/expense" element={<EnterExpense />} />
             <Route path="/view-expense" element={<ViewExpense />} />
+            <Route path="/visualize-expense" element={<Dashboard />} />
+            {/* Catch-all route for 404 */}
             <Route path="*" element={<h1>Not Found</h1>} />
           </Route>
           {/* Default route to ViewExpense */}
